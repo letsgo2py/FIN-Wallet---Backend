@@ -68,11 +68,18 @@ export const updateUserRole = async (req, res) => {
 export const createUser = async (req, res) => {
   try {
     const { name, email, password, role, isActive } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
     // 1. Basic validation
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email and password are required",
+      });
+    }
+
+    if (!normalizedEmail.includes("@")) {
+      return res.status(400).json({
+        message: "Please enter a valid email",
       });
     }
 
@@ -86,7 +93,7 @@ export const createUser = async (req, res) => {
 
     // 3. Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -111,7 +118,7 @@ export const createUser = async (req, res) => {
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         password: hashedPassword,
         role: role || "VIEWER",
         isActive: isActive !== undefined ? isActive : true,

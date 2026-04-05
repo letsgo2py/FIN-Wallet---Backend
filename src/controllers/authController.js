@@ -6,13 +6,18 @@ import jwt from "jsonwebtoken";
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
 
     if (!name || !email || !password) {
       return res.status(400).json({ msg: "All fields required" });
     }
 
+    if (!normalizedEmail.includes("@")) {
+      return res.status(400).json({ msg: "Please enter a valid email" });
+    }
+
     const existing = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existing) {
@@ -24,7 +29,7 @@ export const register = async (req, res) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
       },
     });
