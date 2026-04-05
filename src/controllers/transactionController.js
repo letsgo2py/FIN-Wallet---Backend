@@ -17,6 +17,75 @@ const formatWeekKey = (date) => {
   return weekStart.toISOString().split("T")[0];
 };
 
+export const getTransactions = async (req, res) => {
+  try{
+    const userId = req.user?.id;
+    if(!userId){
+      return res.status(401).json({
+        message: "Unauthorized user, not found in the request while fetching the records",
+      });
+    }
+
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      userId,
+    };
+
+    if (req.query.category) {
+      where.category = req.query.category;
+    }
+
+    if (req.query.type) {
+      where.type = req.query.type;
+    }
+
+    if (req.query.date) {
+      const selectedDate = new Date(req.query.date);
+
+      if (!Number.isNaN(selectedDate.getTime())) {
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        where.date = {
+          gte: startOfDay,
+          lte: endOfDay,
+        };
+      }
+    }
+
+    const [transactions, totalRecords] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        orderBy:{
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    return res.status(200).json({
+      transactions,
+      totalRecords,
+      currentPage: page,
+      totalPages: Math.max(1, Math.ceil(totalRecords / limit)),
+    });
+
+  } catch(err){
+      console.error("getTransactions failed:", err);
+      return res.status(500).json({
+          message: "internal Server error",
+      });
+  }
+}
+
 export const createTransaction = async (req, res) => {
   try {
     const { amount, type, category, date, notes } = req.body;
@@ -78,76 +147,6 @@ export const createTransaction = async (req, res) => {
     });
   }
 };
-
-export const getTransactions = async (req, res) => {
-  try{
-    const userId = req.user?.id;
-    if(!userId){
-      return res.status(401).json({
-        message: "Unauthorized user, not found in the request while fetching the records",
-      });
-    }
-
-    const page = Math.max(Number(req.query.page) || 1, 1);
-    // const limit = Math.max(Number(req.query.limit) || 10, 1);
-    const limit = 10;
-    const skip = (page - 1) * limit;
-
-    const where = {
-      userId,
-    };
-
-    if (req.query.category) {
-      where.category = req.query.category;
-    }
-
-    if (req.query.type) {
-      where.type = req.query.type;
-    }
-
-    if (req.query.date) {
-      const selectedDate = new Date(req.query.date);
-
-      if (!Number.isNaN(selectedDate.getTime())) {
-        const startOfDay = new Date(selectedDate);
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        where.date = {
-          gte: startOfDay,
-          lte: endOfDay,
-        };
-      }
-    }
-
-    const [transactions, totalRecords] = await Promise.all([
-      prisma.transaction.findMany({
-        where,
-        orderBy:{
-          createdAt: 'desc',
-        },
-        skip,
-        take: limit,
-      }),
-      prisma.transaction.count({ where }),
-    ]);
-
-    return res.status(200).json({
-      transactions,
-      totalRecords,
-      currentPage: page,
-      totalPages: Math.max(1, Math.ceil(totalRecords / limit)),
-    });
-
-  } catch(err){
-      console.error("getTransactions failed:", err);
-      return res.status(500).json({
-          message: "internal Server error",
-      });
-  }
-}
 
 export const deleteTransaction = async (req, res) => {
   try {
