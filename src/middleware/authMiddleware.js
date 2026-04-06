@@ -4,7 +4,7 @@ export const protect = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ msg: "No token, not authenticated" });
+    return res.status(401).json({ message: "No token, not authenticated" });
   }
 
   const token = authHeader.split(" ")[1];
@@ -14,6 +14,6 @@ export const protect = (req, res, next) => {
     req.user = decoded; 
     next();
   } catch (err) {
-    return res.status(401).json({ msg: "Invalid token" });
+    return res.status(401).json({ message: "Invalid token" });
   }
 };

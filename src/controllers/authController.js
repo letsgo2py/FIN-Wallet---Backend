@@ -9,11 +9,11 @@ export const register = async (req, res) => {
     const normalizedEmail = email?.trim().toLowerCase();
 
     if (!name || !email || !password) {
-      return res.status(400).json({ msg: "All fields required" });
+      return res.status(400).json({ message: "All fields required" });
     }
 
     if (!normalizedEmail.includes("@")) {
-      return res.status(400).json({ msg: "Please enter a valid email" });
+      return res.status(400).json({ message: "Please enter a valid email" });
     }
 
     const existing = await prisma.user.findUnique({
@@ -21,7 +21,7 @@ export const register = async (req, res) => {
     });
 
     if (existing) {
-      return res.status(400).json({ msg: "User already exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,12 +35,12 @@ export const register = async (req, res) => {
     });
 
     res.status(201).json({
-      msg: "User registered",
+      message: "User registered",
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -49,23 +49,28 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
-      return res.status(400).json({ msg: "User not found, Please register first!" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({ msg: "Wrong Password!" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({ msg: "Your account is not active" });
+      return res.status(403).json({ message: "Your account is not active" });
     }
 
     const token = jwt.sign(
@@ -85,6 +90,6 @@ export const login = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };

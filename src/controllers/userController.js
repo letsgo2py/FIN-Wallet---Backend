@@ -33,9 +33,8 @@ export const updateUserRole = async (req, res) => {
   try {
     const { userId, role } = req.body;
 
-    // ❌ prevent assigning SUPER_ADMIN
     if (role === "SUPER_ADMIN") {
-      return res.status(403).json({ msg: "Not allowed" });
+      return res.status(403).json({ message: "Not allowed" });
     }
 
     const targetUser = await prisma.user.findUnique({
@@ -43,13 +42,12 @@ export const updateUserRole = async (req, res) => {
     });
 
     if (!targetUser) {
-      return res.status(404).json({ msg: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // ❌ prevent modifying SUPER_ADMIN
     if (targetUser.role === "SUPER_ADMIN") {
       return res.status(403).json({
-        msg: "Cannot modify SUPER_ADMIN",
+        message: "Cannot modify SUPER_ADMIN",
       });
     }
 
@@ -61,7 +59,7 @@ export const updateUserRole = async (req, res) => {
     res.json(updated);
 
   } catch (err) {
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -70,28 +68,27 @@ export const createUser = async (req, res) => {
     const { name, email, password, role, isActive } = req.body;
     const normalizedEmail = email?.trim().toLowerCase();
 
-    // 1. Basic validation
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email and password are required",
       });
     }
 
-    if (!normalizedEmail.includes("@")) {
+    const emailRegex = /^[^\s@]+@[^\s@]+$/;
+
+    if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({
         message: "Please enter a valid email",
       });
     }
 
-    // 2. Validate role
-    const validRoles = ["VIEWER", "ANALYST", "ADMIN", "SUPER_ADMIN"];
+    const validRoles = ["VIEWER", "ANALYST", "ADMIN"];
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({
         message: "Invalid role",
       });
     }
 
-    // 3. Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -102,19 +99,16 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // 4. 🔒 Role restriction (VERY IMPORTANT)
     if (req.user.role === "ADMIN") {
       if (role === "ADMIN" || role === "SUPER_ADMIN") {
         return res.status(403).json({
-          message: "Admin cannot create ADMIN or SUPER_ADMIN",
+          message: "Admin cannot create ADMIN",
         });
       }
     }
 
-    // 5. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 6. Create user
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
@@ -125,7 +119,6 @@ export const createUser = async (req, res) => {
       },
     });
 
-    // 7. Response (never send password)
     return res.status(201).json({
       message: "User created successfully",
       user: {
@@ -179,12 +172,12 @@ export const updateUserStatus = async (req, res) => {
     if (req.user.role === "ADMIN") {
       if (targetUser.role === "ADMIN" || targetUser.role === "SUPER_ADMIN") {
         return res.status(403).json({
-          message: "Admin cannot change status of ADMIN or SUPER_ADMIN",
+          message: "Admin cannot change status of ADMIN",
         });
       }
     }
 
-    // Optional: prevent self-deactivation
+    // prevent self-deactivation
     if (req.user.id === Number(userId) && isActive === false) {
       return res.status(400).json({
         message: "You cannot deactivate your own account",
