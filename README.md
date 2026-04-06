@@ -34,6 +34,28 @@ Implemented capabilities:
 - JWT
 - bcryptjs
 
+## Why Prisma and PostgreSQL
+
+I chose Prisma with PostgreSQL for this project because the application is strongly relational and role-based.
+
+Reasons for this choice:
+
+- the data model is structured and relational: one user can have many transactions, and transactions belong to a specific user
+- PostgreSQL is a strong fit for relational data, filtering, joins, aggregations, and summary calculations
+- the summary feature needs grouped totals, trend-style reporting, and predictable querying, which SQL databases handle very well
+- PostgreSQL supports ACID properties, which is useful for financial records where consistency matters
+- Prisma makes database access cleaner and safer with a typed schema, readable queries, and easier migrations
+- Prisma also reduces the risk of simple raw-query mistakes because most operations are written through ORM methods instead of manual SQL strings
+
+Why not MongoDB or another NoSQL database here:
+
+- this project does not have highly flexible or deeply nested document data
+- the core entities and their relationships are well-defined, so a relational model is more natural
+- reporting features like totals by type, category-wise summaries, and trend calculations are easier to reason about in PostgreSQL
+- role-based user management and transaction ownership checks also map cleanly to relational constraints
+
+In short, Prisma + PostgreSQL gave a better balance of structure, consistency, maintainability, and reporting support for a finance dashboard than MongoDB would for this specific assignment.
+
 ## Project Structure
 
 ```text
@@ -544,4 +566,3 @@ Current deployment targets referenced in the project:
 
 - Backend: Google Cloud Run
 - Frontend: Netlify
-
