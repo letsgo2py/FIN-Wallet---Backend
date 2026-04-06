@@ -559,6 +559,8 @@ npm start
 - no rate limiting is implemented yet
 - validation can be centralized further with dedicated middleware or schema validation
 - tests are not included yet
+- Currently, an admin creates new users by assigning their password directly. This works for the project, but it is not an ideal real-world approach because the admin should not know the user’s password.
+- A better production-ready approach would be to let the admin send an invite link, so the user can set their own password securely.
 
 ## Deployment
 
